@@ -6,8 +6,8 @@ export type MazePosition = {
   y: number;
 };
 
-const MAX_SPEED = 6.5;
-const TILT_ACCELERATION = 10;
+const MAX_SPEED = 8;
+const TILT_ACCELERATION = 12;
 const FRICTION = 3.2;
 const TILT_SMOOTHING = 0.28;
 const BALL_RADIUS = 0.2;
