@@ -26,15 +26,10 @@ export function MazeBoard({ maze, playerPosition, goalPosition }: MazeBoardProps
                 key={`${rowIndex}-${columnIndex}`}
                 style={[
                   styles.cell,
-                  cell === "1"
-                    ? styles.wall
-                    : cell === "2"
-                      ? styles.hole
-                      : cell === "3"
-                        ? styles.hazard
-                        : styles.path,
+                  cell === "1" ? styles.wall : cell === "3" ? styles.hazardWall : styles.path,
                 ]}
               >
+                {cell === "2" ? <View style={styles.hole} /> : null}
               </View>
             ))}
           </View>
@@ -88,8 +83,15 @@ const styles = StyleSheet.create({
   cell: { alignItems: "center", flex: 1, justifyContent: "center" },
   wall: { backgroundColor: "#59617A", borderColor: "#101426", borderWidth: 1 },
   path: { backgroundColor: "#171D32", borderColor: "#101426", borderWidth: 1 },
-  hole: { backgroundColor: "#05060C", borderColor: "#101426", borderWidth: 1 },
-  hazard: { backgroundColor: "#A83B5C", borderColor: "#FF749E", borderWidth: 1 },
+  hole: {
+    aspectRatio: 1,
+    backgroundColor: "#2D2145",
+    borderColor: "#C084FC",
+    borderRadius: 999,
+    borderWidth: 2,
+    width: "72%",
+  },
+  hazardWall: { backgroundColor: "#A83B5C", borderColor: "#101426", borderWidth: 1 },
   player: {
     backgroundColor: "#B8FF5A",
     borderColor: "#E4FFC1",
@@ -97,6 +99,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     position: "absolute",
   },
-  goal: { borderColor: "#FF749E", borderRadius: 100, borderWidth: 2, position: "absolute" },
+  goal: {
+    backgroundColor: "#22C55E",
+    borderColor: "#DCFCE7",
+    borderRadius: 100,
+    borderWidth: 2,
+    position: "absolute",
+  },
   boardHint: { color: "#62667C", fontSize: 10, fontWeight: "700", letterSpacing: 2, marginTop: 15 },
 });

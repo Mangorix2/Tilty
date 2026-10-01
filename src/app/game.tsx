@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   },
   winIcon: {
     alignItems: "center",
-    backgroundColor: "#B8FF5A",
+    backgroundColor: "#4ADE80",
     borderRadius: 30,
     height: 60,
     justifyContent: "center",
