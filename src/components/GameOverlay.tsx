@@ -7,6 +7,8 @@ type GameOverlayProps = {
   elapsedSeconds: number;
   level: number;
   totalLevels: number;
+  stars: number;
+  bestTime: number | null;
   onRestart: () => void;
 };
 
@@ -15,6 +17,8 @@ export function GameOverlay({
   elapsedSeconds,
   level,
   totalLevels,
+  stars,
+  bestTime,
   onRestart,
 }: GameOverlayProps) {
   const isWin = type === "win";
@@ -39,8 +43,12 @@ export function GameOverlay({
 
         {isWin ? (
           <View style={styles.winStats}>
+            <Text style={styles.stars}>{Array.from({ length: 3 }, (_, index) => index < stars ? "★" : "☆").join(" ")}</Text>
             <Text style={styles.winStatLabel}>TIME</Text>
             <Text style={styles.winStatValue}>{formatTime(elapsedSeconds)}</Text>
+            {bestTime !== null && bestTime < elapsedSeconds ? (
+              <Text style={styles.bestTime}>BEST: {formatTime(bestTime)}</Text>
+            ) : null}
           </View>
         ) : (
           <ActionButton label="TRY AGAIN" onPress={onRestart} variant="danger" />
@@ -140,8 +148,10 @@ const styles = StyleSheet.create({
   nextButtonText: { color: "#090B16", fontSize: 13, fontWeight: "800", letterSpacing: 1.5 },
   nextArrow: { color: "#090B16", fontSize: 24, fontWeight: "300", marginLeft: 14 },
   winStats: { alignItems: "center", borderColor: "#2A3452", borderTopWidth: 1, marginTop: 24, paddingTop: 16, width: "100%" },
+  stars: { color: "#B8FF5A", fontSize: 26, letterSpacing: 4, marginBottom: 12 },
   winStatLabel: { color: "#62667C", fontSize: 10, fontWeight: "700", letterSpacing: 2 },
   winStatValue: { color: "#F7F7FA", fontSize: 22, fontWeight: "800", marginTop: 4 },
+  bestTime: { color: "#8A8EA4", fontSize: 11, fontWeight: "700", marginTop: 8 },
   homeButton: { paddingVertical: 16 },
   homeButtonText: { color: "#8A8EA4", fontSize: 11, fontWeight: "700", letterSpacing: 1.5 },
   pressed: { opacity: 0.8 },

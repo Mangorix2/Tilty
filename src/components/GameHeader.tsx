@@ -4,9 +4,11 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 type GameHeaderProps = {
   level: number;
   totalLevels: number;
+  isPaused: boolean;
+  onPause: () => void;
 };
 
-export function GameHeader({ level, totalLevels }: GameHeaderProps) {
+export function GameHeader({ level, totalLevels, isPaused, onPause }: GameHeaderProps) {
   return (
     <View style={styles.header}>
       <Pressable
@@ -25,11 +27,11 @@ export function GameHeader({ level, totalLevels }: GameHeaderProps) {
       </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Pause game"
-        onPress={() => undefined}
+        accessibilityLabel={isPaused ? "Resume game" : "Pause game"}
+        onPress={onPause}
         style={styles.iconButton}
       >
-        <Text style={styles.pauseIcon}>Ⅱ</Text>
+        <Text style={styles.pauseIcon}>{isPaused ? "▶" : "Ⅱ"}</Text>
       </Pressable>
     </View>
   );

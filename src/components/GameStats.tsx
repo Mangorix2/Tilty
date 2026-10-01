@@ -2,9 +2,10 @@ import { StyleSheet, Text, View } from "react-native";
 
 type GameStatsProps = {
   elapsedSeconds: number;
+  bestTime: number | null;
 };
 
-export function GameStats({ elapsedSeconds }: GameStatsProps) {
+export function GameStats({ elapsedSeconds, bestTime }: GameStatsProps) {
   return (
     <View style={styles.stats}>
       <View>
@@ -14,7 +15,7 @@ export function GameStats({ elapsedSeconds }: GameStatsProps) {
       <View style={styles.statDivider} />
       <View>
         <Text style={styles.statLabel}>BEST</Text>
-        <Text style={styles.statValue}>00:18</Text>
+        <Text style={styles.statValue}>{bestTime === null ? "--:--" : formatTime(bestTime)}</Text>
       </View>
       <View style={styles.progressTrack}>
         <View style={styles.progressFill} />
