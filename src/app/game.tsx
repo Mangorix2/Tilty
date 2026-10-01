@@ -1,5 +1,7 @@
+import { Accelerometer, type AccelerometerMeasurement } from "expo-sensors";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 const maze = [
@@ -14,7 +16,49 @@ const maze = [
   "111111111",
 ];
 
+const MOVE_THRESHOLD = 0.25;
+const MOVE_COOLDOWN = 180;
+
 export default function Game() {
+  const [playerPosition, setPlayerPosition] = useState({ row: 1, column: 1 });
+  const lastMoveAt = useRef(0);
+
+  useEffect(() => {
+    let subscription: ReturnType<typeof Accelerometer.addListener> | undefined;
+    let active = true;
+
+    const startSensor = async () => {
+      const available = await Accelerometer.isAvailableAsync();
+      if (!active || !available) return;
+
+      Accelerometer.setUpdateInterval(100);
+      subscription = Accelerometer.addListener((measurement) => {
+        const now = Date.now();
+        if (now - lastMoveAt.current < MOVE_COOLDOWN) return;
+
+        const direction = getDirection(measurement);
+        if (!direction) return;
+
+        setPlayerPosition((current) => {
+          const next = {
+            row: current.row + direction.row,
+            column: current.column + direction.column,
+          };
+
+          if (!isOpenCell(next.row, next.column)) return current;
+          lastMoveAt.current = now;
+          return next;
+        });
+      });
+    };
+
+    void startSensor();
+    return () => {
+      active = false;
+      subscription?.remove();
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -67,7 +111,9 @@ export default function Game() {
                 key={`${rowIndex}-${columnIndex}`}
                 style={[styles.cell, cell === "1" ? styles.wall : styles.path]}
               >
-                {rowIndex === 1 && columnIndex === 1 ? <View style={styles.player} /> : null}
+                {playerPosition.row === rowIndex && playerPosition.column === columnIndex ? (
+                  <View style={styles.player} />
+                ) : null}
                 {rowIndex === 7 && columnIndex === 7 ? <View style={styles.goal} /> : null}
               </View>
             )),
@@ -76,27 +122,19 @@ export default function Game() {
         <Text style={styles.boardHint}>TILT TO MOVE</Text>
       </View>
 
-      <View style={styles.controls}>
-        <Text style={styles.controlLabel}>OR USE CONTROLS</Text>
-        <View style={styles.controlRow}>
-          <Pressable style={styles.controlButton}>
-            <Text style={styles.controlText}>←</Text>
-          </Pressable>
-          <View style={styles.verticalControls}>
-            <Pressable style={styles.controlButton}>
-              <Text style={styles.controlText}>↑</Text>
-            </Pressable>
-            <Pressable style={styles.controlButton}>
-              <Text style={styles.controlText}>↓</Text>
-            </Pressable>
-          </View>
-          <Pressable style={styles.controlButton}>
-            <Text style={styles.controlText}>→</Text>
-          </Pressable>
-        </View>
-      </View>
+      <Text style={styles.tiltHint}>TILT YOUR DEVICE TO MOVE</Text>
     </View>
   );
+}
+
+function getDirection({ x, y }: AccelerometerMeasurement) {
+  if (Math.abs(x) < MOVE_THRESHOLD && Math.abs(y) < MOVE_THRESHOLD) return null;
+  if (Math.abs(x) > Math.abs(y)) return { row: 0, column: x > 0 ? 1 : -1 };
+  return { row: y > 0 ? 1 : -1, column: 0 };
+}
+
+function isOpenCell(row: number, column: number) {
+  return maze[row]?.[column] === "0";
 }
 
 const styles = StyleSheet.create({
@@ -141,19 +179,5 @@ const styles = StyleSheet.create({
   player: { backgroundColor: "#B8FF5A", borderColor: "#E4FFC1", borderRadius: 8, borderWidth: 2, height: "55%", width: "55%" },
   goal: { borderColor: "#FF749E", borderRadius: 7, borderWidth: 2, height: "48%", width: "48%" },
   boardHint: { color: "#62667C", fontSize: 10, fontWeight: "700", letterSpacing: 2, marginTop: 15 },
-  controls: { alignItems: "center", marginTop: "auto", paddingBottom: 26 },
-  controlLabel: { color: "#62667C", fontSize: 10, fontWeight: "700", letterSpacing: 2, marginBottom: 14 },
-  controlRow: { alignItems: "center", flexDirection: "row", gap: 10 },
-  verticalControls: { gap: 10 },
-  controlButton: {
-    alignItems: "center",
-    backgroundColor: "#151A2D",
-    borderColor: "#242A41",
-    borderRadius: 14,
-    borderWidth: 1,
-    height: 52,
-    justifyContent: "center",
-    width: 58,
-  },
-  controlText: { color: "#F7F7FA", fontSize: 24 },
+  tiltHint: { color: "#62667C", fontSize: 10, fontWeight: "700", letterSpacing: 2, marginTop: "auto", paddingBottom: 28, textAlign: "center" },
 });
