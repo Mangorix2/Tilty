@@ -9,11 +9,17 @@ export type GridPosition = {
 const MOVE_THRESHOLD = 0.25;
 const MOVE_COOLDOWN = 180;
 
-export function useTiltMovement(maze: readonly string[], initialPosition: GridPosition) {
+export function useTiltMovement(
+  maze: readonly string[],
+  initialPosition: GridPosition,
+  enabled = true,
+) {
   const [position, setPosition] = useState(initialPosition);
   const lastMoveAt = useRef(0);
 
   useEffect(() => {
+    if (!enabled) return;
+
     let subscription: ReturnType<typeof Accelerometer.addListener> | undefined;
     let active = true;
 
@@ -47,7 +53,7 @@ export function useTiltMovement(maze: readonly string[], initialPosition: GridPo
       active = false;
       subscription?.remove();
     };
-  }, [maze]);
+  }, [enabled, maze]);
 
   return position;
 }

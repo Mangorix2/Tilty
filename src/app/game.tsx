@@ -1,8 +1,8 @@
+import { MazeBoard } from "@/components/MazeBoard";
+import { GameProvider, useGame } from "@/context/GameContext";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { MazeBoard } from "@/components/MazeBoard";
-import { GameProvider, useGame } from "@/context/GameContext";
 
 export default function Game() {
   return (
@@ -13,7 +13,8 @@ export default function Game() {
 }
 
 function GameScreen() {
-  const { maze, playerPosition, goalPosition } = useGame();
+  const { maze, playerPosition, goalPosition, elapsedSeconds, isStarted, isComplete, startGame } =
+    useGame();
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -42,11 +43,21 @@ function GameScreen() {
       <Pressable onPress={() => router.push("/tilt-test")} style={styles.testLink}>
         <Text style={styles.testLinkText}>TEST TILT SENSOR →</Text>
       </Pressable>
+      {!isStarted ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Start level"
+          onPress={startGame}
+          style={styles.startButton}
+        >
+          <Text style={styles.startButtonText}>START LEVEL</Text>
+        </Pressable>
+      ) : null}
 
       <View style={styles.stats}>
         <View>
           <Text style={styles.statLabel}>TIME</Text>
-          <Text style={styles.statValue}>00:24</Text>
+          <Text style={styles.statValue}>{formatTime(elapsedSeconds)}</Text>
         </View>
         <View style={styles.statDivider} />
         <View>
@@ -60,9 +71,17 @@ function GameScreen() {
 
       <MazeBoard maze={maze} playerPosition={playerPosition} goalPosition={goalPosition} />
 
-      <Text style={styles.tiltHint}>TILT YOUR DEVICE TO MOVE</Text>
+      <Text style={styles.tiltHint}>
+        {isComplete ? "LEVEL COMPLETE" : isStarted ? "TILT YOUR DEVICE TO MOVE" : "PRESS START TO PLAY"}
+      </Text>
     </View>
   );
+}
+
+function formatTime(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
 const styles = StyleSheet.create({
@@ -84,6 +103,15 @@ const styles = StyleSheet.create({
   stats: { alignItems: "center", flexDirection: "row", marginTop: 35 },
   testLink: { alignSelf: "center", marginTop: 16 },
   testLinkText: { color: "#B8FF5A", fontSize: 10, fontWeight: "700", letterSpacing: 2 },
+  startButton: {
+    alignSelf: "center",
+    backgroundColor: "#B8FF5A",
+    borderRadius: 14,
+    marginTop: 20,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+  },
+  startButtonText: { color: "#090B16", fontSize: 12, fontWeight: "800", letterSpacing: 1.5 },
   statLabel: { color: "#62667C", fontSize: 10, fontWeight: "700", letterSpacing: 2 },
   statValue: { color: "#F7F7FA", fontSize: 18, fontWeight: "700", marginTop: 5 },
   statDivider: { backgroundColor: "#242A41", height: 30, marginHorizontal: 24, width: 1 },
