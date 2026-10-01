@@ -16,13 +16,20 @@ export function useTiltMovement(
   maze: readonly string[],
   initialPosition: MazePosition,
   enabled = true,
+  resetKey = 0,
 ) {
   const [position, setPosition] = useState(initialPosition);
+  const [isDead, setIsDead] = useState(false);
+  const isDeadRef = useRef(false);
   const velocity = useRef({ x: 0, y: 0 });
   const tilt = useRef({ x: 0, y: 0 });
   const lastUpdateAt = useRef<number | null>(null);
 
   useEffect(() => {
+    setPosition(initialPosition);
+    setIsDead(false);
+    isDeadRef.current = false;
+
     if (!enabled) {
       velocity.current = { x: 0, y: 0 };
       tilt.current = { x: 0, y: 0 };
@@ -39,6 +46,8 @@ export function useTiltMovement(
 
       Accelerometer.setUpdateInterval(50);
       subscription = Accelerometer.addListener((measurement) => {
+        if (isDeadRef.current) return;
+
         const now = Date.now();
         const previousUpdateAt = lastUpdateAt.current ?? now;
         const deltaSeconds = Math.min((now - previousUpdateAt) / 1000, 0.08);
@@ -59,14 +68,15 @@ export function useTiltMovement(
           MAX_SPEED,
         );
 
-        setPosition((current) =>
-          moveWithCollision(
-            current,
-            velocity.current,
-            deltaSeconds,
-            maze,
-          ),
-        );
+        setPosition((current) => {
+          const result = moveWithCollision(current, velocity.current, deltaSeconds, maze);
+          if (result.hitHazard) {
+            isDeadRef.current = true;
+            velocity.current = { x: 0, y: 0 };
+            setIsDead(true);
+          }
+          return result.position;
+        });
       });
     };
 
@@ -75,9 +85,9 @@ export function useTiltMovement(
       active = false;
       subscription?.remove();
     };
-  }, [enabled, maze]);
+  }, [enabled, initialPosition, maze, resetKey]);
 
-  return position;
+  return { position, isDead };
 }
 
 function moveWithCollision(
@@ -85,9 +95,13 @@ function moveWithCollision(
   currentVelocity: MazePosition,
   deltaSeconds: number,
   maze: readonly string[],
-): MazePosition {
+): { position: MazePosition; hitHazard: boolean } {
   const nextX = current.x + currentVelocity.x * deltaSeconds;
   const nextY = current.y + currentVelocity.y * deltaSeconds;
+  const hitHazard =
+    touchesDanger({ x: nextX, y: current.y }, maze) ||
+    touchesDanger({ x: current.x, y: nextY }, maze) ||
+    touchesDanger({ x: nextX, y: nextY }, maze);
   const canMoveX = !collidesWithWall({ x: nextX, y: current.y }, maze);
   const canMoveY = !collidesWithWall({ x: canMoveX ? nextX : current.x, y: nextY }, maze);
 
@@ -95,9 +109,28 @@ function moveWithCollision(
   if (!canMoveY) currentVelocity.y = 0;
 
   return {
-    x: canMoveX ? nextX : current.x,
-    y: canMoveY ? nextY : current.y,
+    position: {
+      x: canMoveX ? nextX : current.x,
+      y: canMoveY ? nextY : current.y,
+    },
+    hitHazard,
   };
+}
+
+function touchesDanger(position: MazePosition, maze: readonly string[]) {
+  const minColumn = Math.floor(position.x - BALL_RADIUS);
+  const maxColumn = Math.floor(position.x + BALL_RADIUS);
+  const minRow = Math.floor(position.y - BALL_RADIUS);
+  const maxRow = Math.floor(position.y + BALL_RADIUS);
+
+  for (let row = minRow; row <= maxRow; row += 1) {
+    for (let column = minColumn; column <= maxColumn; column += 1) {
+      const cell = maze[row]?.[column];
+      if (cell === "2" || cell === "3") return true;
+    }
+  }
+
+  return false;
 }
 
 function collidesWithWall(position: MazePosition, maze: readonly string[]) {

@@ -9,7 +9,9 @@ type GameContextValue = {
   elapsedSeconds: number;
   isStarted: boolean;
   isComplete: boolean;
+  isDead: boolean;
   startGame: () => void;
+  restartGame: () => void;
 };
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -18,7 +20,9 @@ export function GameProvider({ children }: PropsWithChildren) {
   const [isStarted, setIsStarted] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
-  const playerPosition = useTiltMovement(MAZE, START_POSITION, isStarted && !isComplete);
+  const [resetKey, setResetKey] = useState(0);
+  const movement = useTiltMovement(MAZE, START_POSITION, isStarted && !isComplete, resetKey);
+  const playerPosition = movement.position;
   const startedAt = useRef<number | null>(null);
   const reachedGoal =
     Math.hypot(playerPosition.x - GOAL_POSITION.x, playerPosition.y - GOAL_POSITION.y) < 0.35;
@@ -26,6 +30,13 @@ export function GameProvider({ children }: PropsWithChildren) {
   const startGame = () => {
     if (isStarted || isComplete) return;
     startedAt.current = Date.now();
+    setIsStarted(true);
+  };
+  const restartGame = () => {
+    startedAt.current = Date.now();
+    setElapsedSeconds(0);
+    setIsComplete(false);
+    setResetKey((current) => current + 1);
     setIsStarted(true);
   };
 
@@ -60,7 +71,9 @@ export function GameProvider({ children }: PropsWithChildren) {
         elapsedSeconds,
         isStarted,
         isComplete,
+        isDead: movement.isDead,
         startGame,
+        restartGame,
       }}
     >
       {children}

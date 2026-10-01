@@ -14,8 +14,17 @@ export default function Game() {
 }
 
 function GameScreen() {
-  const { maze, playerPosition, goalPosition, elapsedSeconds, isStarted, isComplete, startGame } =
-    useGame();
+  const {
+    maze,
+    playerPosition,
+    goalPosition,
+    elapsedSeconds,
+    isStarted,
+    isComplete,
+    isDead,
+    startGame,
+    restartGame,
+  } = useGame();
   const [showWinScreen, setShowWinScreen] = useState(false);
 
   useEffect(() => {
@@ -85,8 +94,37 @@ function GameScreen() {
       <MazeBoard maze={maze} playerPosition={playerPosition} goalPosition={goalPosition} />
 
       <Text style={styles.tiltHint}>
-        {isComplete ? "LEVEL COMPLETE" : isStarted ? "TILT YOUR DEVICE TO MOVE" : "PRESS START TO PLAY"}
+        {isComplete ? "LEVEL COMPLETE" : isDead ? "YOU CRASHED" : isStarted ? "TILT YOUR DEVICE TO MOVE" : "PRESS START TO PLAY"}
       </Text>
+
+      {isDead ? (
+        <View style={styles.deathOverlay}>
+          <View style={styles.deathCard}>
+            <View style={styles.deathIcon}>
+              <Text style={styles.deathIconText}>!</Text>
+            </View>
+            <Text style={styles.deathEyebrow}>LEVEL FAILED</Text>
+            <Text style={styles.deathTitle}>Watch your step</Text>
+            <Text style={styles.deathDescription}>You hit a dangerous wall. Try the level again.</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Restart level"
+              onPress={restartGame}
+              style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.retryButtonText}>TRY AGAIN</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go back to home"
+              onPress={() => router.back()}
+              style={({ pressed }) => [styles.homeButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.homeButtonText}>BACK TO HOME</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
 
       {showWinScreen ? (
         <View style={styles.winOverlay}>
@@ -176,6 +214,48 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
   },
+  deathOverlay: {
+    alignItems: "center",
+    backgroundColor: "rgba(4, 6, 15, 0.86)",
+    bottom: 0,
+    justifyContent: "center",
+    left: 0,
+    padding: 24,
+    position: "absolute",
+    right: 0,
+    top: 0,
+  },
+  deathCard: {
+    alignItems: "center",
+    backgroundColor: "#151A2D",
+    borderColor: "#5C2638",
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 28,
+    width: "100%",
+  },
+  deathIcon: {
+    alignItems: "center",
+    backgroundColor: "#EF4444",
+    borderRadius: 30,
+    height: 60,
+    justifyContent: "center",
+    width: 60,
+  },
+  deathIconText: { color: "#FFF1F2", fontSize: 34, fontWeight: "800" },
+  deathEyebrow: { color: "#FB7185", fontSize: 11, fontWeight: "700", letterSpacing: 2.5, marginTop: 20 },
+  deathTitle: { color: "#F7F7FA", fontSize: 30, fontWeight: "800", marginTop: 8 },
+  deathDescription: { color: "#8A8EA4", fontSize: 14, lineHeight: 21, marginTop: 10, textAlign: "center" },
+  retryButton: {
+    alignItems: "center",
+    backgroundColor: "#EF4444",
+    borderRadius: 14,
+    height: 56,
+    justifyContent: "center",
+    marginTop: 24,
+    width: "100%",
+  },
+  retryButtonText: { color: "#FFF1F2", fontSize: 13, fontWeight: "800", letterSpacing: 1.5 },
   winCard: {
     alignItems: "center",
     backgroundColor: "#151A2D",
