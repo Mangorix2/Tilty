@@ -3,6 +3,7 @@ import { GameProvider, useGame } from "@/context/GameContext";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
 
 export default function Game() {
   return (
@@ -15,6 +16,18 @@ export default function Game() {
 function GameScreen() {
   const { maze, playerPosition, goalPosition, elapsedSeconds, isStarted, isComplete, startGame } =
     useGame();
+  const [showWinScreen, setShowWinScreen] = useState(false);
+
+  useEffect(() => {
+    if (!isComplete) {
+      setShowWinScreen(false);
+      return;
+    }
+
+    const timer = setTimeout(() => setShowWinScreen(true), 650);
+    return () => clearTimeout(timer);
+  }, [isComplete]);
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -74,6 +87,40 @@ function GameScreen() {
       <Text style={styles.tiltHint}>
         {isComplete ? "LEVEL COMPLETE" : isStarted ? "TILT YOUR DEVICE TO MOVE" : "PRESS START TO PLAY"}
       </Text>
+
+      {showWinScreen ? (
+        <View style={styles.winOverlay}>
+          <View style={styles.winCard}>
+            <View style={styles.winIcon}>
+              <Text style={styles.winIconText}>✓</Text>
+            </View>
+            <Text style={styles.winEyebrow}>MAZE COMPLETE</Text>
+            <Text style={styles.winTitle}>You made it!</Text>
+            <Text style={styles.winDescription}>Great balance. Ready for the next challenge?</Text>
+            <View style={styles.winStats}>
+              <Text style={styles.winStatLabel}>TIME</Text>
+              <Text style={styles.winStatValue}>{formatTime(elapsedSeconds)}</Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Play next level"
+              onPress={() => router.replace("/game")}
+              style={({ pressed }) => [styles.nextButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.nextButtonText}>NEXT LEVEL</Text>
+              <Text style={styles.nextArrow}>→</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go back to home"
+              onPress={() => router.back()}
+              style={({ pressed }) => [styles.homeButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.homeButtonText}>BACK TO HOME</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -118,4 +165,54 @@ const styles = StyleSheet.create({
   progressTrack: { backgroundColor: "#20263B", borderRadius: 3, height: 5, marginLeft: "auto", overflow: "hidden", width: 84 },
   progressFill: { backgroundColor: "#B8FF5A", borderRadius: 3, height: 5, width: "35%" },
   tiltHint: { color: "#62667C", fontSize: 10, fontWeight: "700", letterSpacing: 2, marginTop: "auto", paddingBottom: 28, textAlign: "center" },
+  winOverlay: {
+    alignItems: "center",
+    backgroundColor: "rgba(4, 6, 15, 0.86)",
+    bottom: 0,
+    justifyContent: "center",
+    left: 0,
+    padding: 24,
+    position: "absolute",
+    right: 0,
+    top: 0,
+  },
+  winCard: {
+    alignItems: "center",
+    backgroundColor: "#151A2D",
+    borderColor: "#2A3452",
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 28,
+    width: "100%",
+  },
+  winIcon: {
+    alignItems: "center",
+    backgroundColor: "#B8FF5A",
+    borderRadius: 30,
+    height: 60,
+    justifyContent: "center",
+    width: 60,
+  },
+  winIconText: { color: "#090B16", fontSize: 34, fontWeight: "800" },
+  winEyebrow: { color: "#B8FF5A", fontSize: 11, fontWeight: "700", letterSpacing: 2.5, marginTop: 20 },
+  winTitle: { color: "#F7F7FA", fontSize: 30, fontWeight: "800", marginTop: 8 },
+  winDescription: { color: "#8A8EA4", fontSize: 14, lineHeight: 21, marginTop: 10, textAlign: "center" },
+  winStats: { alignItems: "center", borderColor: "#2A3452", borderTopWidth: 1, marginTop: 24, paddingTop: 16, width: "100%" },
+  winStatLabel: { color: "#62667C", fontSize: 10, fontWeight: "700", letterSpacing: 2 },
+  winStatValue: { color: "#F7F7FA", fontSize: 22, fontWeight: "800", marginTop: 4 },
+  nextButton: {
+    alignItems: "center",
+    backgroundColor: "#B8FF5A",
+    borderRadius: 14,
+    flexDirection: "row",
+    height: 56,
+    justifyContent: "center",
+    marginTop: 24,
+    width: "100%",
+  },
+  nextButtonText: { color: "#090B16", fontSize: 13, fontWeight: "800", letterSpacing: 1.5 },
+  nextArrow: { color: "#090B16", fontSize: 24, fontWeight: "300", marginLeft: 14 },
+  pressed: { opacity: 0.8 },
+  homeButton: { paddingVertical: 16 },
+  homeButtonText: { color: "#8A8EA4", fontSize: 11, fontWeight: "700", letterSpacing: 1.5 },
 });

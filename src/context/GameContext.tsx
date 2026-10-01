@@ -16,9 +16,9 @@ const GameContext = createContext<GameContextValue | null>(null);
 
 export function GameProvider({ children }: PropsWithChildren) {
   const [isStarted, setIsStarted] = useState(false);
-  const playerPosition = useTiltMovement(MAZE, START_POSITION, isStarted);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const playerPosition = useTiltMovement(MAZE, START_POSITION, isStarted && !isComplete);
   const startedAt = useRef<number | null>(null);
   const reachedGoal =
     Math.hypot(playerPosition.x - GOAL_POSITION.x, playerPosition.y - GOAL_POSITION.y) < 0.35;
