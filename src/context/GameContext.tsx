@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type PropsWithChildren,
+} from "react";
 import { useTiltMovement, type MazePosition } from "@/hooks/useTiltMovement";
 import { getLevel, TOTAL_LEVELS, type MazeLevel } from "@/models/maze";
 
@@ -12,6 +20,7 @@ type GameContextValue = {
   isStarted: boolean;
   isComplete: boolean;
   isDead: boolean;
+  collisionType: "hole" | "hazardWall" | null;
   startGame: () => void;
   restartGame: () => void;
 };
@@ -38,18 +47,18 @@ export function GameProvider({ children, level: requestedLevel = 1 }: GameProvid
   const reachedGoal =
     Math.hypot(playerPosition.x - levelData.goal.x, playerPosition.y - levelData.goal.y) < 0.35;
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     if (isStarted || isComplete) return;
     startedAt.current = Date.now();
     setIsStarted(true);
-  };
-  const restartGame = () => {
+  }, [isComplete, isStarted]);
+  const restartGame = useCallback(() => {
     startedAt.current = Date.now();
     setElapsedSeconds(0);
     setIsComplete(false);
     setResetKey((current) => current + 1);
     setIsStarted(true);
-  };
+  }, []);
 
   useEffect(() => {
     if (!reachedGoal || isComplete) return;
@@ -85,6 +94,7 @@ export function GameProvider({ children, level: requestedLevel = 1 }: GameProvid
         isStarted,
         isComplete,
         isDead: movement.isDead,
+        collisionType: movement.collisionType,
         startGame,
         restartGame,
       }}

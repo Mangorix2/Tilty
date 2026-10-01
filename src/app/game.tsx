@@ -1,5 +1,6 @@
 import { MazeBoard } from "@/components/MazeBoard";
 import { GameProvider, useGame } from "@/context/GameContext";
+import { useProgress } from "@/context/ProgressContext";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -8,6 +9,13 @@ import { useEffect, useState } from "react";
 export default function Game() {
   const { level } = useLocalSearchParams<{ level?: string }>();
   const levelNumber = Number(level) || 1;
+  const { isLevelUnlocked } = useProgress();
+
+  useEffect(() => {
+    if (!isLevelUnlocked(levelNumber)) router.replace("/levels");
+  }, [isLevelUnlocked, levelNumber]);
+
+  if (!isLevelUnlocked(levelNumber)) return null;
 
   return (
     <GameProvider level={levelNumber}>
@@ -25,12 +33,33 @@ function GameScreen() {
     isStarted,
     isComplete,
     isDead,
+    collisionType,
     level,
     totalLevels,
     startGame,
     restartGame,
   } = useGame();
+  const { unlockNextLevel } = useProgress();
   const [showWinScreen, setShowWinScreen] = useState(false);
+
+  useEffect(() => {
+    if (!isDead || !collisionType) return;
+
+    if (collisionType === "hole") {
+      if (level > 1) {
+        router.replace({ pathname: "/game", params: { level: String(level - 1) } });
+      } else {
+        restartGame();
+      }
+      return;
+    }
+
+    restartGame();
+  }, [collisionType, isDead, level, restartGame]);
+
+  useEffect(() => {
+    if (isComplete) unlockNextLevel(level);
+  }, [isComplete, level, unlockNextLevel]);
 
   useEffect(() => {
     if (!isComplete) {

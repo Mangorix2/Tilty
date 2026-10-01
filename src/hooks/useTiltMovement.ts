@@ -6,6 +6,8 @@ export type MazePosition = {
   y: number;
 };
 
+export type CollisionType = "hole" | "hazardWall";
+
 const MAX_SPEED = 8;
 const TILT_ACCELERATION = 12;
 const FRICTION = 3.2;
@@ -20,6 +22,7 @@ export function useTiltMovement(
 ) {
   const [position, setPosition] = useState(initialPosition);
   const [isDead, setIsDead] = useState(false);
+  const [collisionType, setCollisionType] = useState<CollisionType | null>(null);
   const isDeadRef = useRef(false);
   const velocity = useRef({ x: 0, y: 0 });
   const tilt = useRef({ x: 0, y: 0 });
@@ -28,6 +31,7 @@ export function useTiltMovement(
   useEffect(() => {
     setPosition(initialPosition);
     setIsDead(false);
+    setCollisionType(null);
     isDeadRef.current = false;
 
     if (!enabled) {
@@ -70,10 +74,11 @@ export function useTiltMovement(
 
         setPosition((current) => {
           const result = moveWithCollision(current, velocity.current, deltaSeconds, maze);
-          if (result.hitHazard) {
+          if (result.collisionType) {
             isDeadRef.current = true;
             velocity.current = { x: 0, y: 0 };
             setIsDead(true);
+            setCollisionType(result.collisionType);
           }
           return result.position;
         });
@@ -87,7 +92,7 @@ export function useTiltMovement(
     };
   }, [enabled, initialPosition, maze, resetKey]);
 
-  return { position, isDead };
+  return { position, isDead, collisionType };
 }
 
 function moveWithCollision(
@@ -95,13 +100,13 @@ function moveWithCollision(
   currentVelocity: MazePosition,
   deltaSeconds: number,
   maze: readonly string[],
-): { position: MazePosition; hitHazard: boolean } {
+): { position: MazePosition; collisionType: CollisionType | null } {
   const nextX = current.x + currentVelocity.x * deltaSeconds;
   const nextY = current.y + currentVelocity.y * deltaSeconds;
-  const hitHazard =
-    touchesDanger({ x: nextX, y: current.y }, maze) ||
-    touchesDanger({ x: current.x, y: nextY }, maze) ||
-    touchesDanger({ x: nextX, y: nextY }, maze);
+  const collisionType =
+    getCollisionType({ x: nextX, y: current.y }, maze) ??
+    getCollisionType({ x: current.x, y: nextY }, maze) ??
+    getCollisionType({ x: nextX, y: nextY }, maze);
   const canMoveX = !collidesWithWall({ x: nextX, y: current.y }, maze);
   const canMoveY = !collidesWithWall({ x: canMoveX ? nextX : current.x, y: nextY }, maze);
 
@@ -113,11 +118,11 @@ function moveWithCollision(
       x: canMoveX ? nextX : current.x,
       y: canMoveY ? nextY : current.y,
     },
-    hitHazard,
+    collisionType,
   };
 }
 
-function touchesDanger(position: MazePosition, maze: readonly string[]) {
+function getCollisionType(position: MazePosition, maze: readonly string[]): CollisionType | null {
   const minColumn = Math.floor(position.x - BALL_RADIUS);
   const maxColumn = Math.floor(position.x + BALL_RADIUS);
   const minRow = Math.floor(position.y - BALL_RADIUS);
@@ -126,11 +131,12 @@ function touchesDanger(position: MazePosition, maze: readonly string[]) {
   for (let row = minRow; row <= maxRow; row += 1) {
     for (let column = minColumn; column <= maxColumn; column += 1) {
       const cell = maze[row]?.[column];
-      if (cell === "2" || cell === "3") return true;
+      if (cell === "2") return "hole";
+      if (cell === "3") return "hazardWall";
     }
   }
 
-  return false;
+  return null;
 }
 
 function collidesWithWall(position: MazePosition, maze: readonly string[]) {

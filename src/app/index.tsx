@@ -36,8 +36,8 @@ export default function Index() {
       <View style={styles.footer}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Start game"
-          onPress={() => router.push("/game")}
+          accessibilityLabel="Choose a level"
+          onPress={() => router.push("/levels")}
           style={({ pressed }) => [styles.startButton, pressed && styles.pressed]}
         >
           <Text style={styles.startButtonText}>START GAME</Text>
