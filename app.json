@@ -26,6 +26,12 @@
     "plugins": [
       "expo-router",
       [
+        "expo-sensors",
+        {
+          "motionPermission": "Allow Tilty to use motion data to control the maze."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
