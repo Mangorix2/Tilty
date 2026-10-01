@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from "react";
-import { useTiltMovement, type GridPosition } from "@/hooks/useTiltMovement";
+import { useTiltMovement, type MazePosition } from "@/hooks/useTiltMovement";
 import { GOAL_POSITION, MAZE, START_POSITION } from "@/models/maze";
 
 type GameContextValue = {
   maze: typeof MAZE;
-  playerPosition: GridPosition;
-  goalPosition: GridPosition;
+  playerPosition: MazePosition;
+  goalPosition: MazePosition;
   elapsedSeconds: number;
   isStarted: boolean;
   isComplete: boolean;
@@ -21,7 +21,7 @@ export function GameProvider({ children }: PropsWithChildren) {
   const [isComplete, setIsComplete] = useState(false);
   const startedAt = useRef<number | null>(null);
   const reachedGoal =
-    playerPosition.row === GOAL_POSITION.row && playerPosition.column === GOAL_POSITION.column;
+    Math.hypot(playerPosition.x - GOAL_POSITION.x, playerPosition.y - GOAL_POSITION.y) < 0.35;
 
   const startGame = () => {
     if (isStarted || isComplete) return;

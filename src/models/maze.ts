@@ -1,4 +1,4 @@
-import type { GridPosition } from "@/hooks/useTiltMovement";
+import type { MazePosition } from "@/hooks/useTiltMovement";
 
 export const MAZE = [
   "111111111",
@@ -12,5 +12,5 @@ export const MAZE = [
   "111111111",
 ] as const;
 
-export const START_POSITION: GridPosition = { row: 1, column: 1 };
-export const GOAL_POSITION: GridPosition = { row: 7, column: 7 };
+export const START_POSITION: MazePosition = { x: 1.5, y: 1.5 };
+export const GOAL_POSITION: MazePosition = { x: 7.5, y: 7.5 };

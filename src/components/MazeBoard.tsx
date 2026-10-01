@@ -1,16 +1,24 @@
+import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import type { GridPosition } from "@/hooks/useTiltMovement";
+import type { MazePosition } from "@/hooks/useTiltMovement";
 
 type MazeBoardProps = {
   maze: readonly string[];
-  playerPosition: GridPosition;
-  goalPosition: GridPosition;
+  playerPosition: MazePosition;
+  goalPosition: MazePosition;
 };
 
 export function MazeBoard({ maze, playerPosition, goalPosition }: MazeBoardProps) {
+  const [boardSize, setBoardSize] = useState(0);
+  const cellSize = boardSize / maze[0].length;
+  const ballSize = cellSize * 0.4;
+
   return (
     <View style={styles.board}>
-      <View style={styles.maze}>
+      <View
+        onLayout={({ nativeEvent }) => setBoardSize(nativeEvent.layout.width)}
+        style={styles.maze}
+      >
         {maze.map((row, rowIndex) => (
           <View key={rowIndex} style={styles.mazeRow}>
             {row.split("").map((cell, columnIndex) => (
@@ -18,16 +26,36 @@ export function MazeBoard({ maze, playerPosition, goalPosition }: MazeBoardProps
                 key={`${rowIndex}-${columnIndex}`}
                 style={[styles.cell, cell === "1" ? styles.wall : styles.path]}
               >
-                {playerPosition.row === rowIndex && playerPosition.column === columnIndex ? (
-                  <View style={styles.player} />
-                ) : null}
-                {goalPosition.row === rowIndex && goalPosition.column === columnIndex ? (
-                  <View style={styles.goal} />
-                ) : null}
               </View>
             ))}
           </View>
         ))}
+        {boardSize > 0 ? (
+          <>
+            <View
+              style={[
+                styles.player,
+                {
+                  height: ballSize,
+                  left: playerPosition.x * cellSize - ballSize / 2,
+                  top: playerPosition.y * cellSize - ballSize / 2,
+                  width: ballSize,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.goal,
+                {
+                  height: ballSize * 0.9,
+                  left: goalPosition.x * cellSize - (ballSize * 0.9) / 2,
+                  top: goalPosition.y * cellSize - (ballSize * 0.9) / 2,
+                  width: ballSize * 0.9,
+                },
+              ]}
+            />
+          </>
+        ) : null}
       </View>
       <Text style={styles.boardHint}>TILT TO MOVE</Text>
     </View>
@@ -54,11 +82,10 @@ const styles = StyleSheet.create({
   player: {
     backgroundColor: "#B8FF5A",
     borderColor: "#E4FFC1",
-    borderRadius: 8,
+    borderRadius: 100,
     borderWidth: 2,
-    height: "55%",
-    width: "55%",
+    position: "absolute",
   },
-  goal: { borderColor: "#FF749E", borderRadius: 7, borderWidth: 2, height: "48%", width: "48%" },
+  goal: { borderColor: "#FF749E", borderRadius: 100, borderWidth: 2, position: "absolute" },
   boardHint: { color: "#62667C", fontSize: 10, fontWeight: "700", letterSpacing: 2, marginTop: 15 },
 });

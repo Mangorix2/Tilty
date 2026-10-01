@@ -1,24 +1,34 @@
-import { Accelerometer, type AccelerometerMeasurement } from "expo-sensors";
+import { Accelerometer } from "expo-sensors";
 import { useEffect, useRef, useState } from "react";
 
-export type GridPosition = {
-  row: number;
-  column: number;
+export type MazePosition = {
+  x: number;
+  y: number;
 };
 
-const MOVE_THRESHOLD = 0.25;
-const MOVE_COOLDOWN = 180;
+const MAX_SPEED = 6.5;
+const TILT_ACCELERATION = 10;
+const FRICTION = 3.2;
+const TILT_SMOOTHING = 0.28;
+const BALL_RADIUS = 0.2;
 
 export function useTiltMovement(
   maze: readonly string[],
-  initialPosition: GridPosition,
+  initialPosition: MazePosition,
   enabled = true,
 ) {
   const [position, setPosition] = useState(initialPosition);
-  const lastMoveAt = useRef(0);
+  const velocity = useRef({ x: 0, y: 0 });
+  const tilt = useRef({ x: 0, y: 0 });
+  const lastUpdateAt = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      velocity.current = { x: 0, y: 0 };
+      tilt.current = { x: 0, y: 0 };
+      lastUpdateAt.current = null;
+      return;
+    }
 
     let subscription: ReturnType<typeof Accelerometer.addListener> | undefined;
     let active = true;
@@ -27,24 +37,36 @@ export function useTiltMovement(
       const available = await Accelerometer.isAvailableAsync();
       if (!active || !available) return;
 
-      Accelerometer.setUpdateInterval(100);
+      Accelerometer.setUpdateInterval(50);
       subscription = Accelerometer.addListener((measurement) => {
         const now = Date.now();
-        if (now - lastMoveAt.current < MOVE_COOLDOWN) return;
+        const previousUpdateAt = lastUpdateAt.current ?? now;
+        const deltaSeconds = Math.min((now - previousUpdateAt) / 1000, 0.08);
+        lastUpdateAt.current = now;
 
-        const direction = getDirection(measurement);
-        if (!direction) return;
+        tilt.current.x += (measurement.x - tilt.current.x) * TILT_SMOOTHING;
+        tilt.current.y += (measurement.y - tilt.current.y) * TILT_SMOOTHING;
+        velocity.current.x = clamp(
+          (velocity.current.x + tilt.current.x * TILT_ACCELERATION * deltaSeconds) *
+            Math.exp(-FRICTION * deltaSeconds),
+          -MAX_SPEED,
+          MAX_SPEED,
+        );
+        velocity.current.y = clamp(
+          (velocity.current.y - tilt.current.y * TILT_ACCELERATION * deltaSeconds) *
+            Math.exp(-FRICTION * deltaSeconds),
+          -MAX_SPEED,
+          MAX_SPEED,
+        );
 
-        setPosition((current) => {
-          const next = {
-            row: current.row + direction.row,
-            column: current.column + direction.column,
-          };
-
-          if (maze[next.row]?.[next.column] !== "0") return current;
-          lastMoveAt.current = now;
-          return next;
-        });
+        setPosition((current) =>
+          moveWithCollision(
+            current,
+            velocity.current,
+            deltaSeconds,
+            maze,
+          ),
+        );
       });
     };
 
@@ -58,8 +80,41 @@ export function useTiltMovement(
   return position;
 }
 
-function getDirection({ x, y }: AccelerometerMeasurement) {
-  if (Math.abs(x) < MOVE_THRESHOLD && Math.abs(y) < MOVE_THRESHOLD) return null;
-  if (Math.abs(x) > Math.abs(y)) return { row: 0, column: x > 0 ? 1 : -1 };
-  return { row: y > 0 ? -1 : 1, column: 0 };
+function moveWithCollision(
+  current: MazePosition,
+  currentVelocity: MazePosition,
+  deltaSeconds: number,
+  maze: readonly string[],
+): MazePosition {
+  const nextX = current.x + currentVelocity.x * deltaSeconds;
+  const nextY = current.y + currentVelocity.y * deltaSeconds;
+  const canMoveX = !collidesWithWall({ x: nextX, y: current.y }, maze);
+  const canMoveY = !collidesWithWall({ x: canMoveX ? nextX : current.x, y: nextY }, maze);
+
+  if (!canMoveX) currentVelocity.x = 0;
+  if (!canMoveY) currentVelocity.y = 0;
+
+  return {
+    x: canMoveX ? nextX : current.x,
+    y: canMoveY ? nextY : current.y,
+  };
+}
+
+function collidesWithWall(position: MazePosition, maze: readonly string[]) {
+  const minColumn = Math.floor(position.x - BALL_RADIUS);
+  const maxColumn = Math.floor(position.x + BALL_RADIUS);
+  const minRow = Math.floor(position.y - BALL_RADIUS);
+  const maxRow = Math.floor(position.y + BALL_RADIUS);
+
+  for (let row = minRow; row <= maxRow; row += 1) {
+    for (let column = minColumn; column <= maxColumn; column += 1) {
+      if (maze[row]?.[column] === "1") return true;
+    }
+  }
+
+  return false;
+}
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.max(minimum, Math.min(maximum, value));
 }
