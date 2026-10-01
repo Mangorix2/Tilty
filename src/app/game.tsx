@@ -1,64 +1,19 @@
-import { Accelerometer, type AccelerometerMeasurement } from "expo-sensors";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-
-const maze = [
-  "111111111",
-  "100000001",
-  "101111101",
-  "101000101",
-  "101011101",
-  "101000001",
-  "101111101",
-  "100000001",
-  "111111111",
-];
-
-const MOVE_THRESHOLD = 0.25;
-const MOVE_COOLDOWN = 180;
+import { MazeBoard } from "@/components/MazeBoard";
+import { GameProvider, useGame } from "@/context/GameContext";
 
 export default function Game() {
-  const [playerPosition, setPlayerPosition] = useState({ row: 1, column: 1 });
-  const lastMoveAt = useRef(0);
+  return (
+    <GameProvider>
+      <GameScreen />
+    </GameProvider>
+  );
+}
 
-  useEffect(() => {
-    let subscription: ReturnType<typeof Accelerometer.addListener> | undefined;
-    let active = true;
-
-    const startSensor = async () => {
-      const available = await Accelerometer.isAvailableAsync();
-      if (!active || !available) return;
-
-      Accelerometer.setUpdateInterval(100);
-      subscription = Accelerometer.addListener((measurement) => {
-        const now = Date.now();
-        if (now - lastMoveAt.current < MOVE_COOLDOWN) return;
-
-        const direction = getDirection(measurement);
-        if (!direction) return;
-
-        setPlayerPosition((current) => {
-          const next = {
-            row: current.row + direction.row,
-            column: current.column + direction.column,
-          };
-
-          if (!isOpenCell(next.row, next.column)) return current;
-          lastMoveAt.current = now;
-          return next;
-        });
-      });
-    };
-
-    void startSensor();
-    return () => {
-      active = false;
-      subscription?.remove();
-    };
-  }, []);
-
+function GameScreen() {
+  const { maze, playerPosition, goalPosition } = useGame();
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -103,41 +58,11 @@ export default function Game() {
         </View>
       </View>
 
-      <View style={styles.board}>
-        <View style={styles.maze}>
-          {maze.map((row, rowIndex) =>
-            <View key={rowIndex} style={styles.mazeRow}>
-              {row.split("").map((cell, columnIndex) => (
-                <View
-                  key={`${rowIndex}-${columnIndex}`}
-                  style={[styles.cell, cell === "1" ? styles.wall : styles.path]}
-                >
-                  {playerPosition.row === rowIndex && playerPosition.column === columnIndex ? (
-                    <View style={styles.player} />
-                  ) : null}
-                  {rowIndex === 7 && columnIndex === 7 ? <View style={styles.goal} /> : null}
-                </View>
-              ))}
-            </View>,
-          )}
-        </View>
-        <Text style={styles.boardHint}>TILT TO MOVE</Text>
-      </View>
+      <MazeBoard maze={maze} playerPosition={playerPosition} goalPosition={goalPosition} />
 
       <Text style={styles.tiltHint}>TILT YOUR DEVICE TO MOVE</Text>
     </View>
   );
-}
-
-function getDirection({ x, y }: AccelerometerMeasurement) {
-  if (Math.abs(x) < MOVE_THRESHOLD && Math.abs(y) < MOVE_THRESHOLD) return null;
-  if (Math.abs(x) > Math.abs(y)) return { row: 0, column: x > 0 ? 1 : -1 };
-  // Match the tilt-test screen: positive Y moves the ball upward.
-  return { row: y > 0 ? -1 : 1, column: 0 };
-}
-
-function isOpenCell(row: number, column: number) {
-  return maze[row]?.[column] === "0";
 }
 
 const styles = StyleSheet.create({
@@ -164,24 +89,5 @@ const styles = StyleSheet.create({
   statDivider: { backgroundColor: "#242A41", height: 30, marginHorizontal: 24, width: 1 },
   progressTrack: { backgroundColor: "#20263B", borderRadius: 3, height: 5, marginLeft: "auto", overflow: "hidden", width: 84 },
   progressFill: { backgroundColor: "#B8FF5A", borderRadius: 3, height: 5, width: "35%" },
-  board: {
-    alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: "#101426",
-    borderColor: "#1E2740",
-    borderRadius: 22,
-    borderWidth: 1,
-    marginTop: 34,
-    padding: 16,
-    width: "100%",
-  },
-  maze: { aspectRatio: 1, flexDirection: "column", width: "100%" },
-  mazeRow: { flex: 1, flexDirection: "row" },
-  cell: { alignItems: "center", flex: 1, justifyContent: "center" },
-  wall: { backgroundColor: "#59617A", borderColor: "#101426", borderWidth: 1 },
-  path: { backgroundColor: "#171D32", borderColor: "#101426", borderWidth: 1 },
-  player: { backgroundColor: "#B8FF5A", borderColor: "#E4FFC1", borderRadius: 8, borderWidth: 2, height: "55%", width: "55%" },
-  goal: { borderColor: "#FF749E", borderRadius: 7, borderWidth: 2, height: "48%", width: "48%" },
-  boardHint: { color: "#62667C", fontSize: 10, fontWeight: "700", letterSpacing: 2, marginTop: 15 },
   tiltHint: { color: "#62667C", fontSize: 10, fontWeight: "700", letterSpacing: 2, marginTop: "auto", paddingBottom: 28, textAlign: "center" },
 });
