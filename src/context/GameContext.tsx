@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { useTiltMovement, type MazePosition } from "@/hooks/useTiltMovement";
-import { GOAL_POSITION, MAZE, START_POSITION } from "@/models/maze";
+import { getLevel, TOTAL_LEVELS, type MazeLevel } from "@/models/maze";
 
 type GameContextValue = {
-  maze: typeof MAZE;
+  maze: MazeLevel["maze"];
+  level: number;
+  totalLevels: number;
   playerPosition: MazePosition;
   goalPosition: MazePosition;
   elapsedSeconds: number;
@@ -16,16 +18,25 @@ type GameContextValue = {
 
 const GameContext = createContext<GameContextValue | null>(null);
 
-export function GameProvider({ children }: PropsWithChildren) {
+type GameProviderProps = PropsWithChildren<{ level?: number }>;
+
+export function GameProvider({ children, level: requestedLevel = 1 }: GameProviderProps) {
+  const level = Math.min(Math.max(Math.floor(requestedLevel), 1), TOTAL_LEVELS);
+  const levelData = getLevel(level);
   const [isStarted, setIsStarted] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [resetKey, setResetKey] = useState(0);
-  const movement = useTiltMovement(MAZE, START_POSITION, isStarted && !isComplete, resetKey);
+  const movement = useTiltMovement(
+    levelData.maze,
+    levelData.start,
+    isStarted && !isComplete,
+    resetKey,
+  );
   const playerPosition = movement.position;
   const startedAt = useRef<number | null>(null);
   const reachedGoal =
-    Math.hypot(playerPosition.x - GOAL_POSITION.x, playerPosition.y - GOAL_POSITION.y) < 0.35;
+    Math.hypot(playerPosition.x - levelData.goal.x, playerPosition.y - levelData.goal.y) < 0.35;
 
   const startGame = () => {
     if (isStarted || isComplete) return;
@@ -65,9 +76,11 @@ export function GameProvider({ children }: PropsWithChildren) {
   return (
     <GameContext.Provider
       value={{
-        maze: MAZE,
+        maze: levelData.maze,
+        level,
+        totalLevels: TOTAL_LEVELS,
         playerPosition,
-        goalPosition: GOAL_POSITION,
+        goalPosition: levelData.goal,
         elapsedSeconds,
         isStarted,
         isComplete,

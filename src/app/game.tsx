@@ -1,13 +1,16 @@
 import { MazeBoard } from "@/components/MazeBoard";
 import { GameProvider, useGame } from "@/context/GameContext";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useEffect, useState } from "react";
 
 export default function Game() {
+  const { level } = useLocalSearchParams<{ level?: string }>();
+  const levelNumber = Number(level) || 1;
+
   return (
-    <GameProvider>
+    <GameProvider level={levelNumber}>
       <GameScreen />
     </GameProvider>
   );
@@ -22,6 +25,8 @@ function GameScreen() {
     isStarted,
     isComplete,
     isDead,
+    level,
+    totalLevels,
     startGame,
     restartGame,
   } = useGame();
@@ -51,7 +56,9 @@ function GameScreen() {
         </Pressable>
         <View style={styles.level}>
           <Text style={styles.levelLabel}>CURRENT LEVEL</Text>
-          <Text style={styles.levelValue}>01 / 12</Text>
+          <Text style={styles.levelValue}>
+            {level.toString().padStart(2, "0")} / {totalLevels}
+          </Text>
         </View>
         <Pressable
           accessibilityRole="button"
@@ -141,12 +148,18 @@ function GameScreen() {
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Play next level"
-              onPress={() => router.replace("/game")}
+              accessibilityLabel={level < totalLevels ? "Play next level" : "Back to home"}
+              onPress={() =>
+                level < totalLevels
+                  ? router.replace({ pathname: "/game", params: { level: String(level + 1) } })
+                  : router.replace("/")
+              }
               style={({ pressed }) => [styles.nextButton, pressed && styles.pressed]}
             >
-              <Text style={styles.nextButtonText}>NEXT LEVEL</Text>
-              <Text style={styles.nextArrow}>→</Text>
+              <Text style={styles.nextButtonText}>
+                {level < totalLevels ? "NEXT LEVEL" : "BACK TO HOME"}
+              </Text>
+              {level < totalLevels ? <Text style={styles.nextArrow}>→</Text> : null}
             </Pressable>
             <Pressable
               accessibilityRole="button"
