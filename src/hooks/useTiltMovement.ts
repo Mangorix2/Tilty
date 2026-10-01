@@ -108,7 +108,8 @@ function collidesWithWall(position: MazePosition, maze: readonly string[]) {
 
   for (let row = minRow; row <= maxRow; row += 1) {
     for (let column = minColumn; column <= maxColumn; column += 1) {
-      if (maze[row]?.[column] === "1") return true;
+      const cell = maze[row]?.[column];
+      if (cell !== "0") return true;
     }
   }
 

@@ -24,7 +24,16 @@ export function MazeBoard({ maze, playerPosition, goalPosition }: MazeBoardProps
             {row.split("").map((cell, columnIndex) => (
               <View
                 key={`${rowIndex}-${columnIndex}`}
-                style={[styles.cell, cell === "1" ? styles.wall : styles.path]}
+                style={[
+                  styles.cell,
+                  cell === "1"
+                    ? styles.wall
+                    : cell === "2"
+                      ? styles.hole
+                      : cell === "3"
+                        ? styles.hazard
+                        : styles.path,
+                ]}
               >
               </View>
             ))}
@@ -79,6 +88,8 @@ const styles = StyleSheet.create({
   cell: { alignItems: "center", flex: 1, justifyContent: "center" },
   wall: { backgroundColor: "#59617A", borderColor: "#101426", borderWidth: 1 },
   path: { backgroundColor: "#171D32", borderColor: "#101426", borderWidth: 1 },
+  hole: { backgroundColor: "#05060C", borderColor: "#101426", borderWidth: 1 },
+  hazard: { backgroundColor: "#A83B5C", borderColor: "#FF749E", borderWidth: 1 },
   player: {
     backgroundColor: "#B8FF5A",
     borderColor: "#E4FFC1",
