@@ -106,17 +106,19 @@ export default function Game() {
       <View style={styles.board}>
         <View style={styles.maze}>
           {maze.map((row, rowIndex) =>
-            row.split("").map((cell, columnIndex) => (
-              <View
-                key={`${rowIndex}-${columnIndex}`}
-                style={[styles.cell, cell === "1" ? styles.wall : styles.path]}
-              >
-                {playerPosition.row === rowIndex && playerPosition.column === columnIndex ? (
-                  <View style={styles.player} />
-                ) : null}
-                {rowIndex === 7 && columnIndex === 7 ? <View style={styles.goal} /> : null}
-              </View>
-            )),
+            <View key={rowIndex} style={styles.mazeRow}>
+              {row.split("").map((cell, columnIndex) => (
+                <View
+                  key={`${rowIndex}-${columnIndex}`}
+                  style={[styles.cell, cell === "1" ? styles.wall : styles.path]}
+                >
+                  {playerPosition.row === rowIndex && playerPosition.column === columnIndex ? (
+                    <View style={styles.player} />
+                  ) : null}
+                  {rowIndex === 7 && columnIndex === 7 ? <View style={styles.goal} /> : null}
+                </View>
+              ))}
+            </View>,
           )}
         </View>
         <Text style={styles.boardHint}>TILT TO MOVE</Text>
@@ -130,7 +132,8 @@ export default function Game() {
 function getDirection({ x, y }: AccelerometerMeasurement) {
   if (Math.abs(x) < MOVE_THRESHOLD && Math.abs(y) < MOVE_THRESHOLD) return null;
   if (Math.abs(x) > Math.abs(y)) return { row: 0, column: x > 0 ? 1 : -1 };
-  return { row: y > 0 ? 1 : -1, column: 0 };
+  // Match the tilt-test screen: positive Y moves the ball upward.
+  return { row: y > 0 ? -1 : 1, column: 0 };
 }
 
 function isOpenCell(row: number, column: number) {
@@ -172,8 +175,9 @@ const styles = StyleSheet.create({
     padding: 16,
     width: "100%",
   },
-  maze: { aspectRatio: 1, flexDirection: "row", flexWrap: "wrap", width: "100%" },
-  cell: { alignItems: "center", justifyContent: "center", width: `${100 / 9}%` },
+  maze: { aspectRatio: 1, flexDirection: "column", width: "100%" },
+  mazeRow: { flex: 1, flexDirection: "row" },
+  cell: { alignItems: "center", flex: 1, justifyContent: "center" },
   wall: { backgroundColor: "#59617A", borderColor: "#101426", borderWidth: 1 },
   path: { backgroundColor: "#171D32", borderColor: "#101426", borderWidth: 1 },
   player: { backgroundColor: "#B8FF5A", borderColor: "#E4FFC1", borderRadius: 8, borderWidth: 2, height: "55%", width: "55%" },
