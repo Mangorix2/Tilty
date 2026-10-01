@@ -8,9 +8,9 @@ export type MazePosition = {
 
 export type CollisionType = "hole" | "hazardWall";
 
-const MAX_SPEED = 8;
-const TILT_ACCELERATION = 12;
-const FRICTION = 3.2;
+const MAX_SPEED = 23;
+const TILT_ACCELERATION = 18;
+const FRICTION = 2.5;
 const TILT_SMOOTHING = 0.28;
 const BALL_RADIUS = 0.2;
 
